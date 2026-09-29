@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수업 이탈 체크</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f2f5fa;
+    --card: #ffffff;
+    --line: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --primary: #2563eb;
+    --t1: #2563eb;
+    --t2: #7c3aed;
+    --green: #16a34a;
+    --orange: #ea580c;
+    --orange-soft: #ffedd5;
+    --red: #dc2626;
+    --red-soft: #fee2e2;
+    --radius: 14px;
+  }
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h1 { font-size: 20px; }
+  .who {
+    border: none;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .who.t1 { background: var(--t1); }
+  .who.t2 { background: var(--t2); }
+  .sem-switch {
+    display: flex;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .sem {
+    border: none;
+    background: transparent;
+    padding: 7px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--muted);
+  }
+  .sem.active { background: var(--primary); color: #fff; font-weight: 700; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  #tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .tab {
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 9px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+  #stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .stat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .chip.warn { border-color: #fdba74; background: var(--orange-soft); color: #9a3412; }
+  .stat-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--text); }
+  .btn.ghost:hover:not(:disabled) { background: #f8fafc; }
+  .btn.sm { padding: 8px 12px; font-size: 13px; }
+  .btn.primary { background: var(--primary); color: #fff; }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--green);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(30, 41, 59, .08); }
+  .card.warn { border-left-color: var(--orange); }
+  .card.full { border-left-color: var(--red); background: var(--red-soft); }
+  .card .num {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 2px 6px;
+  }
+  .card .sid { font-size: 19px; font-weight: 700; letter-spacing: 1px; }
+  .dots { display: flex; gap: 5px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #cbd5e1; }
+  .dot.used { background: var(--red); border-color: var(--red); }
+  .remain { font-size: 12px; font-weight: 700; }
+  .remain.ok { color: var(--green); }
+  .remain.warn { color: var(--orange); }
+  .remain.danger { color: var(--red); }
+  .gate {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 60;
+  }
+  .gate.hidden { display: none; }
+  .gate-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+  }
+  .gate-box h2 { font-size: 22px; margin-bottom: 6px; }
+  .gate-box .muted { color: var(--muted); font-size: 14px; }
+  .gate-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .gate-btn {
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .gate-btn.t1 { background: var(--t1); }
+  .gate-btn.t2 { background: var(--t2); }
+  .gate-btn:hover { filter: brightness(.95); }
+  #gateClose { margin-top: 14px; }
+  #confirmMsg { white-space: pre-line; font-size: 15px; line-height: 1.7; }
+  .confirm-btns { display: flex; gap: 10px; margin-top: 20px; }
+  .confirm-btns .btn { flex: 1; padding: 12px; font-size: 15px; }
+  .history-list {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+  .history-empty { color: var(--muted); font-size: 13px; padding: 14px 0; }
+  #historyClose { margin-top: 14px; }
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1e293b;
+    color: #fff;
+    padding: 11px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .25s;
+    z-index: 100;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (max-width: 560px) {
+    .header-inner { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <h1>수업 이탈 체크</h1>
+      <button class="who" id="whoBadge" title="선생님 변경">-</button>
+    </div>
+    <div class="sem-switch">
+      <button class="sem" data-sem="1">1학기</button>
+      <button class="sem" data-sem="2">2학기</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="tabs"></div>
+  <div id="stats"></div>
+  <div id="grid"></div>
+</main>
+
+<div class="gate hidden" id="gate">
+  <div class="gate-box">
+    <h2>수업 이탈 체크</h2>
+    <p class="muted">선생님을 선택해 주세요</p>
+    <div class="gate-btns">
+      <button class="gate-btn t1" id="gateT1">1번 선생님</button>
+      <button class="gate-btn t2" id="gateT2">2번 선생님</button>
+    </div>
+    <button class="btn ghost sm" id="gateClose">돌아가기</button>
+  </div>
+</div>
+
+<div class="gate hidden" id="confirmBox" style="z-index:70">
+  <div class="gate-box">
+    <p id="confirmMsg"></p>
+    <div class="confirm-btns">
+      <button class="btn ghost" id="confirmNo">취소</button>
+      <button class="btn primary" id="confirmYes">확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="gate hidden" id="historyBox" style="z-index:65">
+  <div class="gate-box">
+    <h2>기록 되돌리기</h2>
+    <p class="muted" id="historySub"></p>
+    <div class="history-list" id="historyList"></div>
+    <button class="btn ghost sm" id="historyClose">닫기</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const CLASS_COUNT = 15;
+const STUDENT_COUNT = 16;
+const MAX_EXITS = 2;
+
+let state = { classes: [], activeIdx: 0, semester: 1, teacher: null };
+
+const $ = s => document.querySelector(s);
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function makeStudentId(clsIdx, numIdx) {
+  const c = String(clsIdx + 1).padStart(2, '0');
+  const n = String(numIdx + 1).padStart(2, '0');
+  return '2' + c + n;
+}
+
+function initState() {
+  state.classes = [];
+  for (let c = 0; c < CLASS_COUNT; c++) {
+    const students = [];
+    for (let s = 0; s < STUDENT_COUNT; s++) {
+      students.push({
+        id: makeStudentId(c, s),
+        exits: { 1: { 1: [], 2: [] }, 2: { 1: [], 2: [] } }
+      });
+    }
+    state.classes.push({ name: (c + 1) + '반', students });
+  }
+  state.activeIdx = 0;
+  state.semester = 1;
+  state.teacher = null;
+}
+
+function activeClass() {
+  return state.classes[state.activeIdx];
+}
+
+function semExits(student) {
+  return student.exits[state.semester][state.teacher];
+}
+
+function remaining(student) {
+  return Math.max(0, MAX_EXITS - semExits(student).length);
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function hasData() {
+  return state.classes.some(c => c.students.some(s =>
+    s.exits[1][1].length || s.exits[1][2].length || s.exits[2][1].length || s.exits[2][2].length));
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function render() {
+  renderWho();
+  renderSemSwitch();
+  renderTabs();
+  if (!state.teacher) return;
+  renderStats();
+  renderGrid();
+}
+
+function renderWho() {
+  const b = $('#whoBadge');
+  if (!state.teacher) { b.textContent = '-'; b.className = 'who'; return; }
+  b.textContent = state.teacher + '번 선생님';
+  b.className = 'who t' + state.teacher;
+}
+
+function renderSemSwitch() {
+  document.querySelectorAll('.sem').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.sem) === state.semester);
+  });
+}
+
+function renderTabs() {
+  const wrap = $('#tabs');
+  wrap.innerHTML = '';
+  state.classes.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (i === state.activeIdx ? ' active' : '');
+    b.textContent = c.name;
+    b.onclick = () => { state.activeIdx = i; render(); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderStats() {
+  const cls = activeClass();
+  const exhausted = cls.students.filter(s => remaining(s) === 0).length;
+  const anyRecords = cls.students.some(s => semExits(s).length > 0);
+  const today = new Date().toDateString();
+  const todayCount = cls.students.reduce((a, s) =>
+    a + semExits(s).filter(e => new Date(e.ts).toDateString() === today).length, 0);
+  $('#stats').innerHTML = `
+    <div class="stat-chips">
+      <span class="chip">${state.semester}학기</span>
+      <span class="chip">전체 ${STUDENT_COUNT}명</span>
+      <span class="chip warn">기회 소진 ${exhausted}명</span>
+      <span class="chip">오늘 기록 ${todayCount}건</span>
+    </div>
+    <div class="stat-actions">
+      <button class="btn ghost sm" id="historyBtn" ${anyRecords ? '' : 'disabled'}>기록 되돌리기</button>
+      <button class="btn ghost sm" id="copyBtn">기록 복사</button>
+    </div>`;
+  $('#historyBtn').onclick = showHistory;
+  $('#copyBtn').onclick = copyReport;
+}
+
+function renderGrid() {
+  const cls = activeClass();
+  const grid = $('#grid');
+  grid.innerHTML = '';
+  cls.students.forEach((s, i) => {
+    const r = remaining(s);
+    const used = semExits(s).length;
+    let dots = '';
+    for (let k = 0; k < MAX_EXITS; k++) {
+      dots += '<span class="dot' + (k < used ? ' used' : '') + '"></span>';
+    }
+    const card = document.createElement('button');
+    card.className = 'card' + (r === 0 ? ' full' : r === 1 ? ' warn' : '');
+    card.innerHTML = `
+      <span class="num">${i + 1}번</span>
+      <span class="sid">${s.id}</span>
+      <span class="dots">${dots}</span>
+      <span class="remain ${r === 0 ? 'danger' : r === 1 ? 'warn' : 'ok'}">${r === 0 ? '기회 소진' : '잔여 ' + r + '회'}</span>`;
+    card.onclick = () => handleClick(state.activeIdx, i);
+    grid.appendChild(card);
+  });
+}
+
+let confirmCb = null;
+
+function askConfirm(msg, cb) {
+  confirmCb = cb;
+  $('#confirmMsg').textContent = msg;
+  $('#confirmBox').classList.remove('hidden');
+}
+
+function closeConfirm() {
+  $('#confirmBox').classList.add('hidden');
+  confirmCb = null;
+}
+
+function handleClick(cIdx, sIdx) {
+  const s = state.classes[cIdx].students[sIdx];
+  const exits = semExits(s);
+  const r = MAX_EXITS - exits.length;
+  const msg = r <= 0
+    ? s.id + ' 학생은 기회를 모두 사용했습니다.\n그래도 기록할까요?'
+    : s.id + ' 학생의 이탈을 기록할까요?\n잔여 ' + r + '회 → ' + (r - 1) + '회';
+  askConfirm(msg, () => {
+    exits.push({ ts: Date.now(), uid: uid() });
+    render();
+    toast(s.id + (r > 0 ? ' 기록됨 (잔여 ' + (r - 1) + '회)' : ' 초과 기록됨'));
+  });
+}
+
+function showHistory() {
+  renderHistory();
+  $('#historyBox').classList.remove('hidden');
+}
+
+function renderHistory() {
+  const cls = activeClass();
+  $('#historySub').textContent = cls.name + ' · ' + state.semester + '학기 · ' + state.teacher + '번 선생님';
+  const items = [];
+  cls.students.forEach(s => {
+    semExits(s).forEach(e => items.push({ s, e }));
+  });
+  items.sort((a, b) => b.e.ts - a.e.ts);
+  const list = $('#historyList');
+  if (!items.length) {
+    list.innerHTML = '<p class="history-empty">되돌릴 기록이 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  items.forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    row.innerHTML = '<span>' + it.s.id + ' · ' + fmtTime(it.e.ts) + '</span>';
+    const btn = document.createElement('button');
+    btn.className = 'btn ghost sm';
+    btn.textContent = '되돌리기';
+    btn.onclick = () => {
+      askConfirm(it.s.id + ' 학생의 ' + fmtTime(it.e.ts) + ' 기록을 되돌릴까요?\n잔여 횟수가 다시 돌아옵니다.', () => {
+        const exits = semExits(it.s);
+        const idx = exits.findIndex(e => e.uid === it.e.uid);
+        if (idx >= 0) exits.splice(idx, 1);
+        render();
+        renderHistory();
+        toast(it.s.id + ' 기록을 되돌렸습니다 (잔여 ' + remaining(it.s) + '회)');
+      });
+    };
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+function copyReport() {
+  const cls = activeClass();
+  const lines = ['[' + cls.name + ' ' + state.semester + '학기 · ' + state.teacher + '번 선생님]'];
+  let any = false;
+  cls.students.forEach(s => {
+    const exits = semExits(s);
+    if (!exits.length) return;
+    any = true;
+    lines.push(s.id + ' (' + exits.length + '/' + MAX_EXITS + ') - ' + exits.map(e => fmtTime(e.ts)).join(', '));
+  });
+  if (!any) { toast('기록이 없습니다'); return; }
+  const text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => toast('기록이 복사되었습니다'), () => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+  toast('기록이 복사되었습니다');
+}
+
+function showGate() {
+  $('#gateClose').style.display = state.teacher ? '' : 'none';
+  $('#gate').classList.remove('hidden');
+}
+
+function chooseTeacher(t) {
+  state.teacher = t;
+  $('#gate').classList.add('hidden');
+  render();
+  toast(t + '번 선생님 기록 모드입니다');
+}
+
+$('#gateT1').onclick = () => chooseTeacher(1);
+$('#gateT2').onclick = () => chooseTeacher(2);
+$('#gateClose').onclick = () => $('#gate').classList.add('hidden');
+$('#whoBadge').onclick = showGate;
+$('#confirmYes').onclick = () => { const cb = confirmCb; closeConfirm(); if (cb) cb(); };
+$('#confirmNo').onclick = closeConfirm;
+$('#confirmBox').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeConfirm();
+});
+$('#historyClose').onclick = () => $('#historyBox').classList.add('hidden');
+$('#historyBox').addEventListener('click', e => {
+  if (e.target === e.currentTarget) $('#historyBox').classList.add('hidden');
+});
+
+document.querySelectorAll('.sem').forEach(b => {
+  b.onclick = () => {
+    const sem = Number(b.dataset.sem);
+    if (sem === state.semester) return;
+    state.semester = sem;
+    render();
+    toast(sem + '학기 기록으로 전환했습니다');
+  };
+});
+
+window.addEventListener('beforeunload', e => {
+  if (hasData()) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+initState();
+render();
+showGate();
+</script>
+</body>
+</html>
